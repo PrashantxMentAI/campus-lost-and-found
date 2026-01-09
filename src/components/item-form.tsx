@@ -78,10 +78,10 @@ export default function ItemForm() {
 
   return (
     <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
-      <AccordionItem value="item-1" className="border rounded-lg shadow-md bg-card">
+      <AccordionItem value="item-1" className="border rounded-lg shadow-sm bg-card">
         <AccordionTrigger className="p-6 text-lg font-semibold hover:no-underline">
             <div className="flex items-center gap-3">
-                <PlusCircle className="text-accent-foreground h-6 w-6"/>
+                <PlusCircle className="text-primary h-6 w-6"/>
                 <span>Report a Lost or Found Item</span>
             </div>
         </AccordionTrigger>
@@ -174,7 +174,7 @@ export default function ItemForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isPending}>
+              <Button type="submit" className="w-full" disabled={isPending}>
                 {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

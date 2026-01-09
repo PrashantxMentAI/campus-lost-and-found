@@ -19,8 +19,8 @@ export default function ItemCard({ item }: ItemCardProps) {
   return (
     <div className="animate-in fade-in-0 zoom-in-95 duration-500">
       <Card className="w-full overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300">
-        <CardHeader className="flex-row items-center gap-4 space-y-0 p-4 bg-primary/10">
-          <CategoryIcon category={item.category} className="h-8 w-8 text-primary-foreground" />
+        <CardHeader className="flex-row items-center gap-4 space-y-0 p-4 bg-secondary/30">
+          <CategoryIcon category={item.category} className="h-8 w-8 text-primary" />
           <div className="flex-1">
             <CardTitle className="text-lg font-bold">{item.name}</CardTitle>
             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
@@ -33,8 +33,8 @@ export default function ItemCard({ item }: ItemCardProps) {
             </div>
           </div>
           <Badge
-            variant={item.type === 'Lost' ? 'destructive' : 'default'}
-            className={item.type === 'Found' ? 'bg-accent text-accent-foreground' : ''}
+            variant={item.type === 'Lost' ? 'destructive' : 'secondary'}
+            className={item.type === 'Found' ? 'bg-green-100 text-green-800 border-green-200' : ''}
           >
             {item.type}
           </Badge>

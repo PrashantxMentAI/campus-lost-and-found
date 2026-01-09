@@ -4,9 +4,9 @@ import ItemList from '@/components/item-list';
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
-      <header className="bg-card py-6 shadow-sm border-b">
+      <header className="bg-card py-6 border-b">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary-foreground bg-gradient-to-r from-primary via-accent to-primary/80 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground">
             Campus Connect: Lost & Found
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
