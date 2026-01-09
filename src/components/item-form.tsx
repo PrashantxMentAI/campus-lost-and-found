@@ -10,6 +10,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -48,6 +55,7 @@ export default function ItemForm() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,39 +71,62 @@ export default function ItemForm() {
 
   const itemType = form.watch('type');
 
+  const getCameraPermission = async () => {
+    if (hasCameraPermission === undefined) {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setStream(mediaStream);
+        setHasCameraPermission(true);
+        return mediaStream;
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+        return null;
+      }
+    }
+    if (hasCameraPermission && !stream) {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setStream(mediaStream);
+        return mediaStream;
+    }
+    return stream;
+  };
+
   useEffect(() => {
-    if (itemType === 'Found') {
-      const getCameraPermission = async () => {
-        try {
-          const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          setStream(mediaStream);
-          setHasCameraPermission(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
-          });
-        }
-      };
-      getCameraPermission();
+    if (itemType === 'Found' && isCameraDialogOpen) {
+        getCameraPermission().then((mediaStream) => {
+            if (mediaStream && videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+            }
+        })
     } else {
-      // Stop camera stream when switching to 'Lost'
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
         if(videoRef.current) videoRef.current.srcObject = null;
       }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemType, isCameraDialogOpen]);
+
+  useEffect(() => {
+    if (itemType === 'Lost') {
       setCapturedImage(null);
       form.setValue('photo', '');
+      setIsCameraDialogOpen(false);
+       if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemType]);
+
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
@@ -109,6 +140,7 @@ export default function ItemForm() {
         const dataUri = canvas.toDataURL('image/png');
         setCapturedImage(dataUri);
         form.setValue('photo', dataUri);
+        setIsCameraDialogOpen(false);
       }
     }
   };
@@ -138,6 +170,13 @@ export default function ItemForm() {
         setCapturedImage(null);
       }
     });
+  }
+  
+  const openCameraDialog = async () => {
+    const mediaStream = await getCameraPermission();
+    if (mediaStream) {
+      setIsCameraDialogOpen(true);
+    }
   }
 
   return (
@@ -183,58 +222,6 @@ export default function ItemForm() {
                 )}
               />
 
-              {itemType === 'Found' && (
-                <div className="space-y-4 rounded-lg border p-4">
-                   <h3 className="text-lg font-medium flex items-center gap-2"><Video /> Camera</h3>
-                  {hasCameraPermission === undefined && (
-                    <div className="flex items-center justify-center h-48 bg-muted rounded-md">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
-                  {hasCameraPermission === false && (
-                     <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Camera Access Required</AlertTitle>
-                      <AlertDescription>
-                        Please allow camera access in your browser to add a photo.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                   {hasCameraPermission && (
-                     <div className='space-y-4'>
-                       <div className="relative">
-                         <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                       </div>
-                        <Button type="button" onClick={handleCapture} className="w-full">
-                          <Camera className="mr-2 h-4 w-4" />
-                          Capture Photo
-                        </Button>
-                     </div>
-                   )}
-                   {capturedImage && (
-                     <div className='space-y-2'>
-                        <h4 className='font-medium'>Captured Image:</h4>
-                        <div className="relative border rounded-md p-2">
-                           <Image src={capturedImage} alt="Captured item" width={400} height={300} className="rounded-md w-full" />
-                           <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => {
-                                 setCapturedImage(null);
-                                 form.setValue('photo', '');
-                              }}
-                           >
-                              Remove
-                           </Button>
-                        </div>
-                     </div>
-                   )}
-                   <canvas ref={canvasRef} className="hidden" />
-                </div>
-              )}
-
               <FormField
                 control={form.control}
                 name="name"
@@ -277,6 +264,35 @@ export default function ItemForm() {
                   </FormItem>
                 )}
               />
+               {itemType === 'Found' && (
+                <FormItem>
+                  <FormLabel>Photo</FormLabel>
+                   {!capturedImage ? (
+                      <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full">
+                         <Camera className="mr-2 h-4 w-4" />
+                         Add Photo
+                      </Button>
+                   ) : (
+                     <div className='space-y-2'>
+                        <div className="relative border rounded-md p-2">
+                           <Image src={capturedImage} alt="Captured item" width={400} height={300} className="rounded-md w-full aspect-video object-cover" />
+                           <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={() => {
+                                 setCapturedImage(null);
+                                 form.setValue('photo', '');
+                              }}
+                           >
+                              Remove
+                           </Button>
+                        </div>
+                     </div>
+                   )}
+                </FormItem>
+              )}
               <FormField
                 control={form.control}
                 name="contact"
@@ -302,6 +318,45 @@ export default function ItemForm() {
               </Button>
             </form>
           </Form>
+          <canvas ref={canvasRef} className="hidden" />
+
+          <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><Video /> Camera</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                  {hasCameraPermission === undefined && (
+                    <div className="flex items-center justify-center h-48 bg-muted rounded-md">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  {hasCameraPermission === false && (
+                     <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Camera Access Required</AlertTitle>
+                      <AlertDescription>
+                        Please allow camera access in your browser to add a photo.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                   {hasCameraPermission && (
+                     <div className='space-y-4'>
+                       <div className="relative">
+                         <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                       </div>
+                     </div>
+                   )}
+               </div>
+              <DialogFooter>
+                <Button type="button" onClick={handleCapture} disabled={!hasCameraPermission}>
+                  <Camera className="mr-2 h-4 w-4" />
+                  Capture Photo
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         </AccordionContent>
       </AccordionItem>
     </Accordion>
