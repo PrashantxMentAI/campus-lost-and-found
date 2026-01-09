@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useTransition, useRef } from 'react';
+import { useTransition, useRef, useState, useEffect } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -24,7 +24,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { addItem } from '@/app/actions';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, Camera, Video, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Image from 'next/image';
 
 const formSchema = z.object({
   type: z.enum(['Lost', 'Found'], {
@@ -34,12 +36,18 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   location: z.string().min(3, 'Location must be at least 3 characters.'),
   contact: z.string().min(5, 'Contact information is required.'),
+  photo: z.string().optional(),
 });
 
 export default function ItemForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,13 +57,68 @@ export default function ItemForm() {
       location: '',
       contact: '',
       type: 'Lost',
+      photo: '',
     },
   });
+
+  const itemType = form.watch('type');
+
+  useEffect(() => {
+    if (itemType === 'Found') {
+      const getCameraPermission = async () => {
+        try {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setStream(mediaStream);
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
+          });
+        }
+      };
+      getCameraPermission();
+    } else {
+      // Stop camera stream when switching to 'Lost'
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+        if(videoRef.current) videoRef.current.srcObject = null;
+      }
+      setCapturedImage(null);
+      form.setValue('photo', '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemType]);
+
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if(context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const dataUri = canvas.toDataURL('image/png');
+        setCapturedImage(dataUri);
+        form.setValue('photo', dataUri);
+      }
+    }
+  };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const formData = new FormData();
     Object.entries(values).forEach(([key, value]) => {
-      formData.append(key, value);
+      if (value) {
+        formData.append(key, value);
+      }
     });
 
     startTransition(async () => {
@@ -72,6 +135,7 @@ export default function ItemForm() {
           description: 'Your item has been posted to the board.',
         });
         form.reset();
+        setCapturedImage(null);
       }
     });
   }
@@ -118,6 +182,58 @@ export default function ItemForm() {
                   </FormItem>
                 )}
               />
+
+              {itemType === 'Found' && (
+                <div className="space-y-4 rounded-lg border p-4">
+                   <h3 className="text-lg font-medium flex items-center gap-2"><Video /> Camera</h3>
+                  {hasCameraPermission === undefined && (
+                    <div className="flex items-center justify-center h-48 bg-muted rounded-md">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  {hasCameraPermission === false && (
+                     <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Camera Access Required</AlertTitle>
+                      <AlertDescription>
+                        Please allow camera access in your browser to add a photo.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                   {hasCameraPermission && (
+                     <div className='space-y-4'>
+                       <div className="relative">
+                         <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                       </div>
+                        <Button type="button" onClick={handleCapture} className="w-full">
+                          <Camera className="mr-2 h-4 w-4" />
+                          Capture Photo
+                        </Button>
+                     </div>
+                   )}
+                   {capturedImage && (
+                     <div className='space-y-2'>
+                        <h4 className='font-medium'>Captured Image:</h4>
+                        <div className="relative border rounded-md p-2">
+                           <Image src={capturedImage} alt="Captured item" width={400} height={300} className="rounded-md w-full" />
+                           <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={() => {
+                                 setCapturedImage(null);
+                                 form.setValue('photo', '');
+                              }}
+                           >
+                              Remove
+                           </Button>
+                        </div>
+                     </div>
+                   )}
+                   <canvas ref={canvasRef} className="hidden" />
+                </div>
+              )}
 
               <FormField
                 control={form.control}

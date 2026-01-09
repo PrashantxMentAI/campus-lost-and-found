@@ -4,6 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import type { Item } from '@/lib/types';
 import { MapPin, User, Info, Calendar } from 'lucide-react';
 import { CategoryIcon } from './icons';
+import Image from 'next/image';
 
 interface ItemCardProps {
   item: Item;
@@ -40,6 +41,17 @@ export default function ItemCard({ item }: ItemCardProps) {
           </Badge>
         </CardHeader>
         <CardContent className="p-4 space-y-3 text-sm">
+          {item.photo && item.type === 'Found' && (
+            <div className="mb-4">
+              <Image 
+                src={item.photo} 
+                alt={item.name}
+                width={600}
+                height={400}
+                className="rounded-lg object-cover w-full aspect-video"
+              />
+            </div>
+          )}
           <div className="flex items-start gap-3">
             <Info className="h-4 w-4 mt-0.5 text-muted-foreground" />
             <p className="flex-1">
