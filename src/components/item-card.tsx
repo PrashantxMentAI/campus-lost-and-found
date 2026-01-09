@@ -34,8 +34,12 @@ export default function ItemCard({ item }: ItemCardProps) {
             </div>
           </div>
           <Badge
-            variant={item.type === 'Lost' ? 'destructive' : 'secondary'}
-            className={item.type === 'Found' ? 'bg-green-100 text-green-800 border-green-200' : ''}
+            variant={item.type === 'Lost' ? 'destructive' : 'default'}
+            className={
+              item.type === 'Lost'
+                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white border-transparent'
+                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent'
+            }
           >
             {item.type}
           </Badge>
