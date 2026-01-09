@@ -31,7 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { addItem } from '@/app/actions';
-import { PlusCircle, Loader2, Camera, Video, AlertCircle } from 'lucide-react';
+import { PlusCircle, Loader2, Camera, Video, AlertCircle, Upload } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 
@@ -52,8 +52,9 @@ export default function ItemForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
 
@@ -115,14 +116,13 @@ export default function ItemForm() {
   }, [itemType, isCameraDialogOpen]);
 
   useEffect(() => {
-    if (itemType === 'Lost') {
-      setCapturedImage(null);
-      form.setValue('photo', '');
-      setIsCameraDialogOpen(false);
-       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        setStream(null);
-      }
+    // Reset photo when type changes
+    setPhotoPreview(null);
+    form.setValue('photo', '');
+    setIsCameraDialogOpen(false);
+     if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemType]);
@@ -138,10 +138,23 @@ export default function ItemForm() {
       if(context) {
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         const dataUri = canvas.toDataURL('image/png');
-        setCapturedImage(dataUri);
+        setPhotoPreview(dataUri);
         form.setValue('photo', dataUri);
         setIsCameraDialogOpen(false);
       }
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setPhotoPreview(dataUri);
+        form.setValue('photo', dataUri);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -167,7 +180,7 @@ export default function ItemForm() {
           description: 'Your item has been posted to the board.',
         });
         form.reset();
-        setCapturedImage(null);
+        setPhotoPreview(null);
       }
     });
   }
@@ -264,26 +277,47 @@ export default function ItemForm() {
                   </FormItem>
                 )}
               />
-               {itemType === 'Found' && (
-                <FormItem>
-                  <FormLabel>Photo</FormLabel>
-                   {!capturedImage ? (
-                      <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full">
-                         <Camera className="mr-2 h-4 w-4" />
-                         Add Photo
-                      </Button>
+               <FormItem>
+                  <FormLabel>Photo (Optional)</FormLabel>
+                   {!photoPreview ? (
+                      <>
+                        {itemType === 'Found' && (
+                            <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full">
+                                <Camera className="mr-2 h-4 w-4" />
+                                Add Photo
+                            </Button>
+                        )}
+                        {itemType === 'Lost' && (
+                           <>
+                              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Photo
+                              </Button>
+                              <Input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={handleFileChange} 
+                              />
+                            </>
+                        )}
+                      </>
                    ) : (
                      <div className='space-y-2'>
                         <div className="relative border rounded-md p-2">
-                           <Image src={capturedImage} alt="Captured item" width={400} height={300} className="rounded-md w-full aspect-video object-cover" />
+                           <Image src={photoPreview} alt="Item photo" width={400} height={300} className="rounded-md w-full aspect-video object-cover" />
                            <Button
                               type="button"
                               variant="destructive"
                               size="sm"
                               className="absolute top-2 right-2"
                               onClick={() => {
-                                 setCapturedImage(null);
+                                 setPhotoPreview(null);
                                  form.setValue('photo', '');
+                                 if (fileInputRef.current) {
+                                   fileInputRef.current.value = '';
+                                 }
                               }}
                            >
                               Remove
@@ -292,7 +326,6 @@ export default function ItemForm() {
                      </div>
                    )}
                 </FormItem>
-              )}
               <FormField
                 control={form.control}
                 name="contact"

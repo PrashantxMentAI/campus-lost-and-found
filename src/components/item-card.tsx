@@ -41,7 +41,7 @@ export default function ItemCard({ item }: ItemCardProps) {
           </Badge>
         </CardHeader>
         <CardContent className="p-4 space-y-3 text-sm">
-          {item.photo && item.type === 'Found' && (
+          {item.photo && (
             <div className="mb-4">
               <Image 
                 src={item.photo} 
