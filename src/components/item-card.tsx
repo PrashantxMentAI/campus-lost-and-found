@@ -37,8 +37,8 @@ export default function ItemCard({ item }: ItemCardProps) {
             variant={item.type === 'Lost' ? 'destructive' : 'default'}
             className={
               item.type === 'Lost'
-                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white border-transparent'
-                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent'
+                ? 'bg-[#DC2626] text-white border-transparent'
+                : 'bg-[#16A34A] text-white border-transparent hover:bg-[#16A34A]/90'
             }
           >
             {item.type}
