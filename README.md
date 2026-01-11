@@ -1,4 +1,4 @@
-# Firebase Studio - Campus Connect: Lost & Found
+l# Firebase Studio - Campus Connect: Lost & Found
 
 This is a Next.js starter project built in Firebase Studio. It's a "Lost & Found" application for a campus community, enhanced with AI features.
 
