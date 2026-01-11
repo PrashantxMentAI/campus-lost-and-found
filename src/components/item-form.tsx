@@ -57,6 +57,11 @@ export default function ItemForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -190,6 +195,10 @@ export default function ItemForm() {
     if (mediaStream) {
       setIsCameraDialogOpen(true);
     }
+  }
+
+  if (!isClient) {
+    return null;
   }
 
   return (
