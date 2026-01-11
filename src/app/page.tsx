@@ -1,17 +1,25 @@
 import ItemForm from '@/components/item-form';
 import ItemList from '@/components/item-list';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
       <header className="bg-secondary py-6 border-b">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground">
-            Campus Connect: Lost & Found
-          </h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Your friendly campus board to reunite lost items with their owners, now with AI-powered search and categorization.
-          </p>
+        <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center">
+                <div className="text-center md:text-left">
+                  <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground">
+                    Campus Connect: Lost & Found
+                  </h1>
+                  <p className="text-muted-foreground mt-2 max-w-2xl">
+                    Your friendly campus board to reunite lost items with their owners, now with AI-powered search and categorization.
+                  </p>
+                </div>
+                <div className="hidden md:block">
+                    <ThemeToggle />
+                </div>
+            </div>
         </div>
       </header>
 
