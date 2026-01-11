@@ -29,7 +29,7 @@ export default function Home() {
 
       <footer className="py-6 mt-8 border-t">
         <p className="text-center text-sm text-muted-foreground">
-          A beginner-friendly project for academic submission.
+          A smart campus solution that bridges the gap between lost items and their owners.
         </p>
       </footer>
     </div>
