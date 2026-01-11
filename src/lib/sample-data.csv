@@ -1,0 +1,6 @@
+id,type,name,description,location,category,contact,photoUrl
+1,Lost,"iPhone 12","Black iPhone 12 with a cracked screen. Has a blue case.","Library Cafe",Mobile,"John Doe - john.doe@example.com","https://picsum.photos/seed/1/600/400"
+2,Found,"Leather Wallet","Brown leather wallet, contains credit cards and a driver's license for Jane Smith.","Student Union, 2nd Floor",Wallet,"Campus Security - 555-1234","https://picsum.photos/seed/2/600/400"
+3,Found,"Keys","Set of keys on a red lanyard with a 'UCLA' keychain.","Main Quad",Keys,"Lost and Found Office","https://picsum.photos/seed/3/600/400"
+4,Lost,"Student ID Card","Student ID for Alex Johnson. Student ID: 123456789","Bus Stop on University Ave","ID Card","Alex Johnson - alex.j@example.com","https://picsum.photos/seed/4/600/400"
+5,Lost,"Black Backpack","JanSport backpack, contains a laptop and some textbooks.","Lecture Hall C",Bag,"Sarah Lee - sarah.lee@example.com","https://picsum.photos/seed/5/600/400"
