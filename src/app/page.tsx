@@ -10,8 +10,7 @@ export default function Home() {
             Campus Connect: Lost & Found
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Your friendly campus board to reunite lost items with their owners.
-            Submit a lost or found item below.
+            Your friendly campus board to reunite lost items with their owners, now with AI-powered search and categorization.
           </p>
         </div>
       </header>
