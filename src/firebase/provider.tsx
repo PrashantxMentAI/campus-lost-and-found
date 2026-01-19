@@ -3,7 +3,7 @@
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 interface FirebaseProviderProps {
@@ -88,6 +88,21 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     );
     return () => unsubscribe(); // Cleanup
   }, [auth]); // Depends on the auth instance
+
+  // Effect for anonymous sign-in
+  useEffect(() => {
+    // Only attempt to sign in if:
+    // 1. The auth service is available.
+    // 2. The initial auth state check is complete (isUserLoading is false).
+    // 3. There is no current user.
+    if (auth && !userAuthState.isUserLoading && !userAuthState.user) {
+      signInAnonymously(auth).catch((error) => {
+        console.error("FirebaseProvider: Anonymous sign-in failed:", error);
+        setUserAuthState(prev => ({ ...prev, userError: error }));
+      });
+    }
+  }, [auth, userAuthState.isUserLoading, userAuthState.user]);
+
 
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
