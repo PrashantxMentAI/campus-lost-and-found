@@ -54,14 +54,13 @@ service cloud.firestore {
      * @description Allows public read access to all items. Allows any signed-in
      *              user (including anonymous users) to create new items.
      *              Only the original author can update or delete an item.
-     * @path        /lost_found_items/{lostFoundItemId}
      */
     match /lost_found_items/{lostFoundItemId} {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isSignedIn() && isOwner(resource.data);
-      allow delete: if isSignedIn() && isOwner(resource.data);
+      allow delete: if isSignedIn();
 
       /**
        * @description Defines rules for the 'queries' subcollection on each item.
