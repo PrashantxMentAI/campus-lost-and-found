@@ -5,6 +5,13 @@ import type { Item } from '@/lib/types';
 import { MapPin, User, Info, Calendar } from 'lucide-react';
 import { CategoryIcon } from './icons';
 import Image from 'next/image';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 interface ItemCardProps {
   item: Item;
@@ -45,15 +52,35 @@ export default function ItemCard({ item }: ItemCardProps) {
           </Badge>
         </CardHeader>
         <CardContent className="p-4 space-y-3 text-sm">
-          {item.photo && (
+          {item.photos && item.photos.length > 0 && (
             <div className="mb-4">
-              <Image 
-                src={item.photo} 
-                alt={item.name}
-                width={600}
-                height={400}
-                className="rounded-lg object-cover w-full aspect-video"
-              />
+              {item.photos.length === 1 ? (
+                <Image 
+                  src={item.photos[0]} 
+                  alt={item.name}
+                  width={600}
+                  height={400}
+                  className="rounded-lg object-cover w-full aspect-video"
+                />
+              ) : (
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {item.photos.map((photo, index) => (
+                      <CarouselItem key={index}>
+                        <Image 
+                          src={photo} 
+                          alt={`${item.name} - photo ${index + 1}`}
+                          width={600}
+                          height={400}
+                          className="rounded-lg object-cover w-full aspect-video"
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </Carousel>
+              )}
             </div>
           )}
           <div className="flex items-start gap-3">

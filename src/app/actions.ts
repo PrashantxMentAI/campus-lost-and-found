@@ -17,7 +17,10 @@ const itemSchema = z.object({
   location: z.string().min(3, 'Location must be at least 3 characters.'),
   contact: z.string().min(5, 'Contact information must be at least 5 characters.'),
   type: z.enum(['Lost', 'Found']),
-  photo: z.string().optional(),
+  photos: z.preprocess(
+    (val) => (val ? (typeof val === 'string' ? JSON.parse(val) : val) : []),
+    z.array(z.string()).optional()
+  ),
 });
 
 export async function addItem(formData: FormData) {

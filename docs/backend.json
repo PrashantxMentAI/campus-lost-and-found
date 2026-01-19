@@ -38,9 +38,12 @@
           "type": "object",
           "description": "The date and time the item was submitted."
         },
-        "photo": {
-          "type": "string",
-          "description": "URL to the photo of the item."
+        "photos": {
+          "type": "array",
+          "description": "URLs to the photos of the item.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [

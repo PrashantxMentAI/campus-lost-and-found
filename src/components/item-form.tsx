@@ -45,7 +45,7 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   location: z.string().min(3, 'Location must be at least 3 characters.'),
   contact: z.string().min(5, 'Contact information is required.'),
-  photo: z.string().optional(),
+  photos: z.array(z.string()).optional(),
 });
 
 export default function ItemForm() {
@@ -56,7 +56,7 @@ export default function ItemForm() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -74,7 +74,7 @@ export default function ItemForm() {
       location: '',
       contact: '',
       type: 'Lost',
-      photo: '',
+      photos: [],
     },
   });
 
@@ -125,8 +125,8 @@ export default function ItemForm() {
 
   useEffect(() => {
     // Reset photo when type changes
-    setPhotoPreview(null);
-    form.setValue('photo', '');
+    setPhotoPreviews([]);
+    form.setValue('photos', []);
     setIsCameraDialogOpen(false);
      if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -146,31 +146,61 @@ export default function ItemForm() {
       if(context) {
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         const dataUri = canvas.toDataURL('image/png');
-        setPhotoPreview(dataUri);
-        form.setValue('photo', dataUri);
+        setPhotoPreviews(prev => {
+            const newPreviews = [...(prev || [])];
+            if (newPreviews.length < 2) {
+                newPreviews.push(dataUri);
+            }
+            form.setValue('photos', newPreviews);
+            return newPreviews;
+        });
         setIsCameraDialogOpen(false);
       }
     }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        setPhotoPreview(dataUri);
-        form.setValue('photo', dataUri);
-      };
-      reader.readAsDataURL(file);
+    const files = event.target.files;
+    if (files) {
+      const currentPhotosCount = photoPreviews.length;
+       if (currentPhotosCount >= 2) {
+        toast({ title: 'You can upload a maximum of 2 photos.' });
+        return;
+      }
+      const filesToProcess = Array.from(files).slice(0, 2 - currentPhotosCount);
+
+      filesToProcess.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUri = reader.result as string;
+          setPhotoPreviews(prev => {
+            const newPreviews = [...prev, dataUri];
+            form.setValue('photos', newPreviews);
+            return newPreviews;
+          });
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
+
+  const removePhoto = (indexToRemove: number) => {
+    setPhotoPreviews(prev => {
+      const newPreviews = prev.filter((_, index) => index !== indexToRemove);
+      form.setValue('photos', newPreviews);
+      return newPreviews;
+    })
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const formData = new FormData();
     Object.entries(values).forEach(([key, value]) => {
-      if (value) {
-        formData.append(key, value);
+       if (key === 'photos' && Array.isArray(value)) {
+        if (value.length > 0) {
+          formData.append('photos', JSON.stringify(value));
+        }
+      } else if (value) {
+        formData.append(key, value as string);
       }
     });
 
@@ -202,7 +232,7 @@ export default function ItemForm() {
               description: 'Your item has been posted to the board.',
             });
             form.reset();
-            setPhotoPreview(null);
+            setPhotoPreviews([]);
           })
           .catch((error) => {
             const permissionError = new FirestorePermissionError({
@@ -313,52 +343,49 @@ export default function ItemForm() {
                 )}
               />
                <FormItem>
-                  <FormLabel>Photo (Optional)</FormLabel>
-                   {!photoPreview ? (
+                  <FormLabel>Photos (Optional, max 2)</FormLabel>
+                    <div className="space-y-2">
+                        {photoPreviews.map((preview, index) => (
+                            <div key={index} className="relative border rounded-md p-2">
+                                <Image src={preview} alt={`Item photo ${index + 1}`} width={400} height={300} className="rounded-md w-full aspect-video object-cover" />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute top-2 right-2"
+                                    onClick={() => removePhoto(index)}
+                                >
+                                    Remove
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+
+                   {photoPreviews.length < 2 && (
                       <>
                         {itemType === 'Found' && (
-                            <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full">
+                            <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full mt-2">
                                 <Camera className="mr-2 h-4 w-4" />
                                 Add Photo
                             </Button>
                         )}
                         {itemType === 'Lost' && (
                            <>
-                              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full mt-2">
                                 <Upload className="mr-2 h-4 w-4" />
-                                Upload Photo
+                                Upload Photo(s)
                               </Button>
                               <Input 
                                 type="file" 
                                 ref={fileInputRef} 
                                 className="hidden" 
                                 accept="image/*"
+                                multiple
                                 onChange={handleFileChange} 
                               />
                             </>
                         )}
                       </>
-                   ) : (
-                     <div className='space-y-2'>
-                        <div className="relative border rounded-md p-2">
-                           <Image src={photoPreview} alt="Item photo" width={400} height={300} className="rounded-md w-full aspect-video object-cover" />
-                           <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => {
-                                 setPhotoPreview(null);
-                                 form.setValue('photo', '');
-                                 if (fileInputRef.current) {
-                                   fileInputRef.current.value = '';
-                                 }
-                              }}
-                           >
-                              Remove
-                           </Button>
-                        </div>
-                     </div>
                    )}
                 </FormItem>
               <FormField

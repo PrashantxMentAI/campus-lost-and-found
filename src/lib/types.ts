@@ -12,10 +12,10 @@ export interface Item {
   contact: string;
   category: ItemCategory;
   createdAt: Timestamp;
-  photo?: string;
+  photos?: string[];
 }
 
-export type ItemForAI = Omit<Item, 'createdAt' | 'category' | 'type' | 'contact' | 'photo'>;
+export type ItemForAI = Omit<Item, 'createdAt' | 'category' | 'type' | 'contact' | 'photos'>;
 
 export type NewItem = Omit<Item, 'id' | 'createdAt' | 'category'>;
 
