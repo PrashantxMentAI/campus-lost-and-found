@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Item } from '@/lib/types';
-import { MapPin, User, Info, Calendar, Trash2, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { MapPin, User, Info, Calendar, Trash2, MessageSquare, CheckCircle2, Camera } from 'lucide-react';
 import { CategoryIcon } from './icons';
 import Image from 'next/image';
 import {
@@ -55,6 +55,7 @@ export default function ItemCard({ item }: ItemCardProps) {
   const { toast } = useToast();
   const isOwner = user && user.uid === item.userId;
   const [isResolveDialogOpen, setIsResolveDialogOpen] = useState(false);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [claimerContact, setClaimerContact] = useState('');
 
   const formattedDate = item.createdAt?.toDate().toLocaleString('en-US', {
@@ -165,37 +166,6 @@ export default function ItemCard({ item }: ItemCardProps) {
           )}
         </CardHeader>
         <CardContent className="p-4 space-y-3 text-sm flex-grow">
-          {item.photos && item.photos.length > 0 && (
-            <div className="mb-4">
-              {item.photos.length === 1 ? (
-                <Image 
-                  src={item.photos[0]} 
-                  alt={item.name}
-                  width={600}
-                  height={400}
-                  className="rounded-lg object-cover w-full aspect-video"
-                />
-              ) : (
-                <Carousel className="w-full">
-                  <CarouselContent>
-                    {item.photos.map((photo, index) => (
-                      <CarouselItem key={index}>
-                        <Image 
-                          src={photo} 
-                          alt={`${item.name} - photo ${index + 1}`}
-                          width={600}
-                          height={400}
-                          className="rounded-lg object-cover w-full aspect-video"
-                        />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="left-2" />
-                  <CarouselNext className="right-2" />
-                </Carousel>
-              )}
-            </div>
-          )}
           <div className="flex items-start gap-3">
             <Info className="h-4 w-4 mt-0.5 text-muted-foreground" />
             <p className="flex-1">
@@ -213,6 +183,46 @@ export default function ItemCard({ item }: ItemCardProps) {
             <p className="flex-1">
               <span className="font-semibold">Contact: </span>{item.contact}
             </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <Camera className="h-4 w-4 mt-0.5 text-muted-foreground" />
+            <div className="flex-1">
+                <span className="font-semibold">Photo(s): </span>
+                {item.photos && item.photos.length > 0 ? (
+                    <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="link" className="p-0 h-auto text-primary -translate-y-px">
+                                View ({item.photos.length})
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-xl">
+                            <DialogHeader>
+                                <DialogTitle>{item.name}</DialogTitle>
+                            </DialogHeader>
+                            <Carousel className="w-full">
+                                <CarouselContent>
+                                    {item.photos.map((photo, index) => (
+                                    <CarouselItem key={index}>
+                                        <div className="aspect-video w-full relative">
+                                            <Image 
+                                                src={photo} 
+                                                alt={`${item.name} - photo ${index + 1}`}
+                                                fill
+                                                className="rounded-lg object-contain"
+                                            />
+                                        </div>
+                                    </CarouselItem>
+                                    ))}
+                                </CarouselContent>
+                                <CarouselPrevious className="left-2 sm:-left-8" />
+                                <CarouselNext className="right-2 sm:-right-8" />
+                            </Carousel>
+                        </DialogContent>
+                    </Dialog>
+                ) : (
+                    <span className="text-muted-foreground">No photo</span>
+                )}
+            </div>
           </div>
            {item.status === 'Resolved' && (
             <>
