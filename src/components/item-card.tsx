@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { Item } from '@/lib/types';
-import { MapPin, User, Info, Calendar, Trash2, MessageSquare } from 'lucide-react';
+import { MapPin, User, Info, Calendar, Trash2, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { CategoryIcon } from './icons';
 import Image from 'next/image';
 import {
@@ -15,8 +15,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { useFirestore, useUser } from '@/firebase';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from './ui/button';
 import {
   AlertDialog,
@@ -29,6 +29,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import ItemQueries from './item-queries';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +54,8 @@ export default function ItemCard({ item }: ItemCardProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const isOwner = user && user.uid === item.userId;
+  const [isResolveDialogOpen, setIsResolveDialogOpen] = useState(false);
+  const [claimerContact, setClaimerContact] = useState('');
 
   const formattedDate = item.createdAt?.toDate().toLocaleString('en-US', {
     year: 'numeric',
@@ -52,27 +65,77 @@ export default function ItemCard({ item }: ItemCardProps) {
     minute: '2-digit',
   });
 
-  const handleDelete = async () => {
+  const resolvedDate = item.resolvedAt?.toDate().toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const handleDelete = () => {
     if (!isOwner || !db) return;
-    try {
-      await deleteDoc(doc(db, 'lost_found_items', item.id));
-      toast({
-        title: 'Item Deleted',
-        description: 'The item has been successfully removed from the board.',
+    const docRef = doc(db, 'lost_found_items', item.id);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({
+          title: 'Item Deleted',
+          description: 'The item has been successfully removed from the board.',
+        });
+      })
+      .catch((error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'There was a problem deleting the item. You may not have permission.',
+        });
       });
-    } catch (error) {
-      console.error("Error deleting document: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'There was a problem deleting the item.',
-      });
+  };
+
+  const handleResolve = () => {
+    if (!isOwner || !db) return;
+    if (!claimerContact.trim()) {
+      toast({ variant: 'destructive', title: 'Claimant details required', description: 'Please enter the contact information of the claimant.' });
+      return;
     }
+    const docRef = doc(db, 'lost_found_items', item.id);
+    const updateData = {
+      status: 'Resolved',
+      resolvedAt: serverTimestamp(),
+      claimerContact: claimerContact,
+    };
+    updateDoc(docRef, updateData)
+      .then(() => {
+        toast({
+          title: 'Item Resolved',
+          description: 'This item has been marked as resolved.',
+        });
+        setIsResolveDialogOpen(false);
+        setClaimerContact('');
+      })
+      .catch((error) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'There was a problem resolving the item. You may not have permission.',
+        });
+      });
   };
 
   return (
     <div className="animate-in fade-in-0 zoom-in-95 duration-500">
-      <Card className="w-full overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col">
+      <Card className={`w-full overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col ${item.status === 'Resolved' ? 'bg-muted/50' : ''}`}>
         <CardHeader className="flex-row items-center gap-4 space-y-0 p-4 bg-secondary/30">
           <CategoryIcon category={item.category} className="h-8 w-8 text-primary" />
           <div className="flex-1">
@@ -86,16 +149,20 @@ export default function ItemCard({ item }: ItemCardProps) {
                 </div>
             </div>
           </div>
-          <Badge
-            variant={item.type === 'Lost' ? 'destructive' : 'default'}
-            className={
-              item.type === 'Lost'
-                ? 'bg-[#DC2626] text-white border-transparent'
-                : 'bg-[#16A34A] text-white border-transparent hover:bg-[#16A34A]/90'
-            }
-          >
-            {item.type}
-          </Badge>
+           {item.status === 'Resolved' ? (
+             <Badge className="bg-green-600 text-white hover:bg-green-600/90">Resolved</Badge>
+          ) : (
+            <Badge
+              variant={item.type === 'Lost' ? 'destructive' : 'default'}
+              className={
+                item.type === 'Lost'
+                  ? 'bg-[#DC2626] text-white border-transparent'
+                  : 'bg-[#16A34A] text-white border-transparent hover:bg-[#16A34A]/90'
+              }
+            >
+              {item.type}
+            </Badge>
+          )}
         </CardHeader>
         <CardContent className="p-4 space-y-3 text-sm flex-grow">
           {item.photos && item.photos.length > 0 && (
@@ -147,40 +214,86 @@ export default function ItemCard({ item }: ItemCardProps) {
               <span className="font-semibold">Contact: </span>{item.contact}
             </p>
           </div>
+           {item.status === 'Resolved' && (
+            <>
+              <Separator />
+              <div className="flex items-start gap-3 text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-4 w-4 mt-0.5" />
+                <div className="flex-1">
+                  <p><span className="font-semibold">Resolved on: </span>{resolvedDate}</p>
+                  <p><span className="font-semibold">Claimed by: </span>{item.claimerContact}</p>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
         <CardFooter className="p-4 bg-secondary/20 flex-col items-start">
             <Collapsible className="w-full">
               <div className="flex items-center justify-between w-full">
                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="text-sm">
+                    <Button variant="ghost" className="text-sm p-2 h-auto" disabled={item.status === 'Resolved'}>
                       <MessageSquare className="mr-2 h-4 w-4"/> 
                       Show Queries
                     </Button>
                   </CollapsibleTrigger>
-                {isOwner && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete this item
-                          and remove its data from our servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                <div className="flex items-center gap-2">
+                  {isOwner && item.status === 'Open' && (
+                    <Dialog open={isResolveDialogOpen} onOpenChange={setIsResolveDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Resolved
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Resolve Item</DialogTitle>
+                          <DialogDescription>
+                            Enter the contact details of the person this item was returned to. This will close the listing.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <Label htmlFor="claimer">
+                              Claimant's Details
+                            </Label>
+                            <Input
+                              id="claimer"
+                              placeholder="Name, email, or contact info"
+                              value={claimerContact}
+                              onChange={(e) => setClaimerContact(e.target.value)}
+                            />
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsResolveDialogOpen(false)}>Cancel</Button>
+                          <Button onClick={handleResolve}>Confirm & Resolve</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  {isOwner && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" disabled={item.status === 'Resolved'}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this item
+                            and remove its data from our servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
               <CollapsibleContent>
                 <ItemQueries itemId={item.id} />

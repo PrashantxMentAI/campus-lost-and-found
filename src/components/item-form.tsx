@@ -228,6 +228,7 @@ export default function ItemForm() {
             ...result.data,
             userId: user.uid,
             createdAt: serverTimestamp(),
+            status: 'Open',
         };
 
         const itemsCollection = collection(db, 'lost_found_items');

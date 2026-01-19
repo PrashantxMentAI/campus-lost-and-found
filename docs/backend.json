@@ -48,6 +48,19 @@
           "items": {
             "type": "string"
           }
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the item.",
+          "enum": ["Open", "Resolved"]
+        },
+        "resolvedAt": {
+            "type": "object",
+            "description": "The date and time the item was resolved."
+        },
+        "claimerContact": {
+            "type": "string",
+            "description": "Contact information of the person who claimed the item."
         }
       },
       "required": [
@@ -58,7 +71,8 @@
         "contact",
         "category",
         "description",
-        "createdAt"
+        "createdAt",
+        "status"
       ]
     },
     "ItemQuery": {
