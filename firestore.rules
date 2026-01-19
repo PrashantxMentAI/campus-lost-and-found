@@ -1,0 +1,67 @@
+/**
+ * Core Philosophy: This ruleset implements a public "lost and found board" model.
+ * It allows anyone to view all submitted items to maximize the chance of
+ * reuniting people with their property. To prevent abuse from unauthenticated
+ * scripts, all write operations (creating, editing, deleting) require the user
+ * to have an active session, which can be an anonymous one provided by Firebase
+ * Authentication.
+ *
+ * Data Structure: The database consists of a single top-level collection named
+ * `lost_found_items`, where each document represents a single lost or found item.
+ * There are no user-specific subcollections.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: All data in the `lost_found_items` collection is
+ *   publicly readable and listable to everyone, including users who are not
+ *   signed in. This is essential for the application's function.
+ * - Authenticated Writes: While the board is public, creating, updating, or
+ *   deleting an item requires a valid authentication token. This allows anyone
+ *   using the application (who will be given an anonymous session) to contribute,
+ *   while providing a layer of protection against unauthorized automated writes.
+ * - No Ownership: In this simple model, once an item is created, any
+ *   authenticated user can edit or delete it. There is no concept of document
+ *   ownership, reflecting a simple, communal board.
+ *
+ * Denormalization for Authorization: This principle is not applicable here as
+ * the security model is not based on ownership or relational data. All
+ * authorization decisions are global.
+ *
+ * Structural Segregation: This principle is not applicable as all data is
+ * considered public from the moment of creation. There is no distinction between
+ * private and public content.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+
+    /**
+     * Checks if a user is authenticated, including anonymous sessions.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Allows public read access to all items. Allows any signed-in
+     *              user (including anonymous users) to create, update, and
+     *              delete items.
+     * @path        /lost_found_items/{lostFoundItemId}
+     * @allow       (list): Any user, signed-in or not, can list all items.
+     * @allow       (create): An anonymously signed-in user can create a new item.
+     * @deny        (create): A request without any auth context (e.g., from a raw
+     *              REST call without a token) is denied.
+     * @principle   Implements a public board model where reads are open to all,
+     *              and writes are protected by requiring at least an anonymous
+     *              authentication session.
+     */
+    match /lost_found_items/{lostFoundItemId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+  }
+}

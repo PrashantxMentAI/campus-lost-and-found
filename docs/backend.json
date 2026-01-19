@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "LostFoundItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LostFoundItem",
+      "type": "object",
+      "description": "Represents a lost or found item submitted by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LostFoundItem entity."
+        },
+        "itemType": {
+          "type": "string",
+          "description": "Type of the item (Lost or Found)."
+        },
+        "itemName": {
+          "type": "string",
+          "description": "Name of the item."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location where the item was lost or found."
+        },
+        "contactInformation": {
+          "type": "string",
+          "description": "Contact information of the user who submitted the item."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the item (e.g., Mobile, Wallet, ID Card, Keys, Bag, Other). This is automatically categorized by AI."
+        },
+        "description": {
+          "type": "string",
+          "description": "A more detailed description of the item."
+        },
+        "dateSubmitted": {
+          "type": "string",
+          "description": "The date and time the item was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "itemType",
+        "itemName",
+        "location",
+        "contactInformation",
+        "category",
+        "description",
+        "dateSubmitted"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/lost_found_items/{lostFoundItemId}",
+        "definition": {
+          "entityName": "LostFoundItem",
+          "schema": {
+            "$ref": "#/backend/entities/LostFoundItem"
+          },
+          "description": "Collection of lost and found items. Since no auth is required, all reads and writes are public. ",
+          "params": [
+            {
+              "name": "lostFoundItemId",
+              "description": "Unique identifier for the LostFoundItem."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Given the requirements for a simple \"Lost and Found Board\" application with no authentication, the most straightforward and secure Firestore structure is to use a single collection, `/lost_found_items`. Since there is no user authentication, all items are essentially public. To support the AI-powered auto-categorization, the `category` field is included within the `LostFoundItem` entity. A semantic search is best handled outside of Firestore rules and queries, so the database structure does not directly address it. This design achieves Authorization Independence because no rules depend on any other document. There is no authentication, so all reads and writes are public, and there is no need for denormalization. This trivially satisfies the QAP because `list` operations are permitted for everyone."
+  }
+}
