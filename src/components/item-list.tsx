@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { collection, onSnapshot, query as firestoreQuery, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query as firestoreQuery, orderBy, Timestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { Item } from '@/lib/types';
+import type { Item, SerializableItem } from '@/lib/types';
 import ItemCard from './item-card';
 import { Input } from './ui/input';
 import { Search, Loader2 } from 'lucide-react';
@@ -43,8 +43,14 @@ export default function ItemList() {
     }
 
     startSearchTransition(async () => {
-      const results = await searchItems(query);
-      setSearchResults(results);
+      const results: SerializableItem[] = await searchItems(query);
+      // Convert SerializableItem back to Item for consistent rendering
+      const hydratedResults: Item[] = results.map(item => ({
+        ...item,
+        createdAt: Timestamp.fromDate(new Date(item.createdAt)),
+        resolvedAt: item.resolvedAt ? Timestamp.fromDate(new Date(item.resolvedAt)) : undefined,
+      }));
+      setSearchResults(hydratedResults);
     });
   };
 

@@ -1,11 +1,11 @@
 'use server';
 
 import { z } from 'zod';
-import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { initializeFirebase } from '@/firebase/init';
 import { autoCategorizeItem } from '@/ai/flows/auto-categorize-items';
-import type { NewItem, Item, ItemCategory } from '@/lib/types';
+import type { NewItem, Item, ItemCategory, SerializableItem } from '@/lib/types';
 import { itemCategories } from '@/lib/types';
 
 const { firestore: db } = initializeFirebase();
@@ -60,7 +60,7 @@ export async function addItem(formData: FormData) {
   }
 }
 
-export async function searchItems(query: string): Promise<Item[]> {
+export async function searchItems(query: string): Promise<SerializableItem[]> {
   if (!query) {
     return [];
   }
@@ -82,7 +82,16 @@ export async function searchItems(query: string): Promise<Item[]> {
         item.category.toLowerCase().includes(lowerCaseQuery)
     );
 
-    return filteredItems;
+    // Manually serialize Timestamp objects
+    const serializableItems: SerializableItem[] = filteredItems.map(item => {
+        return {
+            ...item,
+            createdAt: (item.createdAt as Timestamp).toDate().toISOString(),
+            resolvedAt: item.resolvedAt ? (item.resolvedAt as Timestamp).toDate().toISOString() : undefined,
+        };
+    });
+
+    return serializableItems;
 
   } catch (e) {
     console.error('Error searching items: ', e);

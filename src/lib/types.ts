@@ -20,6 +20,11 @@ export interface Item {
   claimerContact?: string;
 }
 
+export type SerializableItem = Omit<Item, 'createdAt' | 'resolvedAt'> & {
+    createdAt: string;
+    resolvedAt?: string;
+};
+
 export interface ItemQuery {
   id: string;
   text: string;
