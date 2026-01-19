@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTransition, useRef, useState, useEffect } from 'react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
   Accordion,
   AccordionContent,
@@ -58,6 +60,7 @@ export default function ItemForm() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const db = useFirestore();
 
   useEffect(() => {
     setIsClient(true);
@@ -172,6 +175,11 @@ export default function ItemForm() {
     });
 
     startTransition(async () => {
+      if (!db) {
+        toast({ variant: 'destructive', title: 'Database not available' });
+        return;
+      }
+
       const result = await addItem(formData);
       if (result?.error) {
         toast({
@@ -179,13 +187,31 @@ export default function ItemForm() {
           title: 'Uh oh! Something went wrong.',
           description: typeof result.error === 'string' ? result.error : 'Please check the form for errors.',
         });
-      } else {
-        toast({
-          title: 'Success!',
-          description: 'Your item has been posted to the board.',
-        });
-        form.reset();
-        setPhotoPreview(null);
+      } else if (result?.success && result.data) {
+        const itemToSave = {
+            ...result.data,
+            createdAt: serverTimestamp(),
+        };
+
+        const itemsCollection = collection(db, 'lost_found_items');
+
+        addDoc(itemsCollection, itemToSave)
+          .then(() => {
+            toast({
+              title: 'Success!',
+              description: 'Your item has been posted to the board.',
+            });
+            form.reset();
+            setPhotoPreview(null);
+          })
+          .catch((error) => {
+            const permissionError = new FirestorePermissionError({
+              path: itemsCollection.path,
+              operation: 'create',
+              requestResourceData: itemToSave,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
       }
     });
   }

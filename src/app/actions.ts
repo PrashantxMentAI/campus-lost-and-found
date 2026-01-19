@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { initializeFirebase } from '@/firebase/init';
 import { autoCategorizeItem } from '@/ai/flows/auto-categorize-items';
 import { semanticSearch } from '@/ai/flows/implement-semantic-search';
-import type { NewItem, Item, ItemForAI } from '@/lib/types';
+import type { NewItem, Item, ItemForAI, ItemCategory } from '@/lib/types';
 import { itemCategories } from '@/lib/types';
 
 const { firestore: db } = initializeFirebase();
@@ -31,27 +31,25 @@ export async function addItem(formData: FormData) {
     };
   }
 
-  const newItem: NewItem = validatedFields.data;
+  const newItemData: NewItem = validatedFields.data;
 
   try {
     // Auto-categorize item using AI
     const categorizationResult = await autoCategorizeItem({
-      description: newItem.description,
+      description: newItemData.description,
     });
     
-    const category = itemCategories.includes(categorizationResult.category)
+    const category: ItemCategory = itemCategories.includes(categorizationResult.category)
       ? categorizationResult.category
       : 'Other';
 
-    // Add item to Firestore
-    await addDoc(collection(db, 'lost_found_items'), {
-      ...newItem,
+    const preparedItem = {
+      ...newItemData,
       category,
-      createdAt: serverTimestamp(),
-    });
+    };
 
     revalidatePath('/');
-    return { success: true };
+    return { success: true, data: preparedItem };
   } catch (e) {
     console.error('Error adding document: ', e);
     return {
