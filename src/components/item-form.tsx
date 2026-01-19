@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { addItem } from '@/app/actions';
-import { PlusCircle, Loader2, Camera, Video, AlertCircle, Upload } from 'lucide-react';
+import { PlusCircle, Loader2, Camera, Video, AlertCircle, Upload, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 
@@ -352,34 +352,34 @@ export default function ItemForm() {
               />
                <FormItem>
                   <FormLabel>Photos (Optional, max 2)</FormLabel>
-                    <div className="space-y-2">
+                    <div className="flex flex-wrap gap-4 pt-2">
                         {photoPreviews.map((preview, index) => (
-                            <div key={index} className="relative border rounded-md p-2">
-                                <Image src={preview} alt={`Item photo ${index + 1}`} width={400} height={300} className="rounded-md w-full aspect-video object-cover" />
+                            <div key={index} className="relative w-24 h-24">
+                                <Image src={preview} alt={`Item photo ${index + 1}`} fill className="rounded-md object-cover" />
                                 <Button
                                     type="button"
                                     variant="destructive"
-                                    size="sm"
-                                    className="absolute top-2 right-2"
+                                    size="icon"
+                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                                     onClick={() => removePhoto(index)}
                                 >
-                                    Remove
+                                    <X className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
                     </div>
 
                    {photoPreviews.length < 2 && (
-                      <>
+                      <div className="mt-2">
                         {itemType === 'Found' && (
-                            <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full mt-2">
+                            <Button type="button" variant="outline" onClick={openCameraDialog} className="w-full">
                                 <Camera className="mr-2 h-4 w-4" />
-                                Add Photo
+                                Add Photo via Camera
                             </Button>
                         )}
                         {itemType === 'Lost' && (
                            <>
-                              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full mt-2">
+                              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
                                 <Upload className="mr-2 h-4 w-4" />
                                 Upload Photo(s)
                               </Button>
@@ -393,7 +393,7 @@ export default function ItemForm() {
                               />
                             </>
                         )}
-                      </>
+                      </div>
                    )}
                 </FormItem>
               <FormField
