@@ -16,7 +16,7 @@ const SemanticSearchInputSchema = z.object({
   items: z.array(
     z.object({
       id: z.string(),
-      itemName: z.string(),
+      name: z.string(),
       location: z.string(),
       description: z.string(),
     })
@@ -27,7 +27,7 @@ export type SemanticSearchInput = z.infer<typeof SemanticSearchInputSchema>;
 const SemanticSearchOutputSchema = z.array(
   z.object({
     id: z.string(),
-    itemName: z.string(),
+    name: z.string(),
     location: z.string(),
     description: z.string(),
   })
@@ -48,7 +48,7 @@ Search Query: {{{query}}}
 
 Items:
 {{#each items}}
-  - ID: {{id}}, Name: {{itemName}}, Location: {{location}}, Description: {{description}}
+  - ID: {{id}}, Name: {{name}}, Location: {{location}}, Description: {{description}}
 {{/each}}
 
 Return only the semantically relevant items in the same format as the input. Exclude items that are not relevant to the search query. Return an empty array if no items are relevant.

@@ -3,11 +3,13 @@
 import { z } from 'zod';
 import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/firebase';
+import { initializeFirebase } from '@/firebase/init';
 import { autoCategorizeItem } from '@/ai/flows/auto-categorize-items';
 import { semanticSearch } from '@/ai/flows/implement-semantic-search';
 import type { NewItem, Item, ItemForAI } from '@/lib/types';
 import { itemCategories } from '@/lib/types';
+
+const { firestore: db } = initializeFirebase();
 
 const itemSchema = z.object({
   name: z.string().min(3, 'Item name must be at least 3 characters.'),
@@ -42,7 +44,7 @@ export async function addItem(formData: FormData) {
       : 'Other';
 
     // Add item to Firestore
-    await addDoc(collection(db, 'items'), {
+    await addDoc(collection(db, 'lost_found_items'), {
       ...newItem,
       category,
       createdAt: serverTimestamp(),
@@ -64,7 +66,7 @@ export async function searchItems(query: string): Promise<Item[]> {
   }
 
   try {
-    const itemsSnapshot = await getDocs(collection(db, 'items'));
+    const itemsSnapshot = await getDocs(collection(db, 'lost_found_items'));
     const itemsList: Item[] = [];
     itemsSnapshot.forEach((doc) => {
       itemsList.push({ id: doc.id, ...doc.data() } as Item);
@@ -72,7 +74,7 @@ export async function searchItems(query: string): Promise<Item[]> {
 
     const itemsForAI: ItemForAI[] = itemsList.map((item) => ({
       id: item.id,
-      itemName: item.name,
+      name: item.name,
       description: item.description,
       location: item.location,
     }));

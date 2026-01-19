@@ -10,11 +10,11 @@
           "type": "string",
           "description": "Unique identifier for the LostFoundItem entity."
         },
-        "itemType": {
+        "type": {
           "type": "string",
           "description": "Type of the item (Lost or Found)."
         },
-        "itemName": {
+        "name": {
           "type": "string",
           "description": "Name of the item."
         },
@@ -22,7 +22,7 @@
           "type": "string",
           "description": "Location where the item was lost or found."
         },
-        "contactInformation": {
+        "contact": {
           "type": "string",
           "description": "Contact information of the user who submitted the item."
         },
@@ -34,21 +34,23 @@
           "type": "string",
           "description": "A more detailed description of the item."
         },
-        "dateSubmitted": {
+        "createdAt": {
+          "type": "object",
+          "description": "The date and time the item was submitted."
+        },
+        "photo": {
           "type": "string",
-          "description": "The date and time the item was submitted.",
-          "format": "date-time"
+          "description": "URL to the photo of the item."
         }
       },
       "required": [
-        "id",
-        "itemType",
-        "itemName",
+        "type",
+        "name",
         "location",
-        "contactInformation",
+        "contact",
         "category",
         "description",
-        "dateSubmitted"
+        "createdAt"
       ]
     }
   },

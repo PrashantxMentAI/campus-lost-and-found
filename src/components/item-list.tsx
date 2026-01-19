@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { collection, onSnapshot, query as firestoreQuery, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import type { Item } from '@/lib/types';
 import ItemCard from './item-card';
 import { Input } from './ui/input';
@@ -16,9 +16,11 @@ export default function ItemList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Item[] | null>(null);
   const [isSearching, startSearchTransition] = useTransition();
+  const db = useFirestore();
 
   useEffect(() => {
-    const q = firestoreQuery(collection(db, 'items'), orderBy('createdAt', 'desc'));
+    if (!db) return;
+    const q = firestoreQuery(collection(db, 'lost_found_items'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const itemsData: Item[] = [];
       querySnapshot.forEach((doc) => {
@@ -29,7 +31,7 @@ export default function ItemList() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [db]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
