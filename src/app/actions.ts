@@ -5,8 +5,7 @@ import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore
 import { revalidatePath } from 'next/cache';
 import { initializeFirebase } from '@/firebase/init';
 import { autoCategorizeItem } from '@/ai/flows/auto-categorize-items';
-import { semanticSearch } from '@/ai/flows/implement-semantic-search';
-import type { NewItem, Item, ItemForAI, ItemCategory } from '@/lib/types';
+import type { NewItem, Item, ItemCategory } from '@/lib/types';
 import { itemCategories } from '@/lib/types';
 
 const { firestore: db } = initializeFirebase();
@@ -72,23 +71,16 @@ export async function searchItems(query: string): Promise<Item[]> {
     itemsSnapshot.forEach((doc) => {
       itemsList.push({ id: doc.id, ...doc.data() } as Item);
     });
+    
+    const lowerCaseQuery = query.toLowerCase();
 
-    const itemsForAI: ItemForAI[] = itemsList.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      location: item.location,
-    }));
-
-    const searchResults = await semanticSearch({
-      query,
-      items: itemsForAI,
-    });
-
-    const rankedItemIds = new Set(searchResults.map(item => item.id));
-
-    // Filter and return original items based on search results
-    const filteredItems = itemsList.filter(item => rankedItemIds.has(item.id));
+    // Perform a simple local search instead of AI-powered semantic search
+    const filteredItems = itemsList.filter(item =>
+        item.name.toLowerCase().includes(lowerCaseQuery) ||
+        item.description.toLowerCase().includes(lowerCaseQuery) ||
+        item.location.toLowerCase().includes(lowerCaseQuery) ||
+        item.category.toLowerCase().includes(lowerCaseQuery)
+    );
 
     return filteredItems;
 
