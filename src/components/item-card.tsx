@@ -237,7 +237,7 @@ export default function ItemCard({ item }: ItemCardProps) {
                     </Button>
                   </CollapsibleTrigger>
                 <div className="flex items-center gap-2">
-                  {isOwner && item.status === 'Open' && (
+                  {isOwner && (item.status === 'Open' || !item.status) && (
                     <Dialog open={isResolveDialogOpen} onOpenChange={setIsResolveDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm">
