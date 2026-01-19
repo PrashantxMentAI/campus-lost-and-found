@@ -5,6 +5,7 @@ export type ItemCategory = 'Mobile' | 'Wallet' | 'ID Card' | 'Keys' | 'Bag' | 'O
 
 export interface Item {
   id: string;
+  userId: string;
   type: ItemType;
   name: string;
   description: string;
@@ -15,8 +16,16 @@ export interface Item {
   photos?: string[];
 }
 
-export type ItemForAI = Omit<Item, 'createdAt' | 'category' | 'type' | 'contact' | 'photos'>;
+export interface ItemQuery {
+  id: string;
+  text: string;
+  userId: string;
+  userName: string;
+  createdAt: Timestamp;
+}
 
-export type NewItem = Omit<Item, 'id' | 'createdAt' | 'category'>;
+export type ItemForAI = Omit<Item, 'createdAt' | 'category' | 'type' | 'contact' | 'photos' | 'userId'>;
+
+export type NewItem = Omit<Item, 'id' | 'createdAt' | 'category' | 'userId'>;
 
 export const itemCategories: ItemCategory[] = ['Mobile', 'Wallet', 'ID Card', 'Keys', 'Bag', 'Other'];

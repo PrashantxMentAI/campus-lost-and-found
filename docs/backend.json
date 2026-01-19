@@ -10,6 +10,10 @@
           "type": "string",
           "description": "Unique identifier for the LostFoundItem entity."
         },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who submitted the item."
+        },
         "type": {
           "type": "string",
           "description": "Type of the item (Lost or Found)."
@@ -47,6 +51,7 @@
         }
       },
       "required": [
+        "userId",
         "type",
         "name",
         "location",
@@ -55,6 +60,30 @@
         "description",
         "createdAt"
       ]
+    },
+    "ItemQuery": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ItemQuery",
+      "type": "object",
+      "description": "Represents a query or comment on a LostFoundItem.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "object"
+        }
+      },
+      "required": ["text", "userId", "userName", "createdAt"]
     }
   },
   "auth": {
@@ -79,6 +108,16 @@
               "description": "Unique identifier for the LostFoundItem."
             }
           ]
+        }
+      },
+      {
+        "path": "/lost_found_items/{lostFoundItemId}/queries/{queryId}",
+        "definition": {
+          "entityName": "ItemQuery",
+          "schema": {
+            "$ref": "#/backend/entities/ItemQuery"
+          },
+          "description": "Subcollection for queries on a specific lost and found item."
         }
       }
     ],

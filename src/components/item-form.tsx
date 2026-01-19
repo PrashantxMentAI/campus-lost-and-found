@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTransition, useRef, useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
 import {
   Accordion,
   AccordionContent,
@@ -61,6 +61,7 @@ export default function ItemForm() {
   const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const db = useFirestore();
+  const { user, isUserLoading } = useUser();
 
   useEffect(() => {
     setIsClient(true);
@@ -218,8 +219,14 @@ export default function ItemForm() {
           description: typeof result.error === 'string' ? result.error : 'Please check the form for errors.',
         });
       } else if (result?.success && result.data) {
+        if (!user) {
+          toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be signed in to post an item.' });
+          return;
+        }
+
         const itemToSave = {
             ...result.data,
+            userId: user.uid,
             createdAt: serverTimestamp(),
         };
 
@@ -401,7 +408,7 @@ export default function ItemForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isPending}>
+              <Button type="submit" className="w-full" disabled={isPending || isUserLoading}>
                 {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
